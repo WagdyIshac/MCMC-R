@@ -1,5 +1,5 @@
 {
-  "name": "mcmchpc",
+  "name": "mcmchpc2",
   "vmSize": "Standard_F16",
   "maxTasksPerNode": 64,
   "poolSize": {
@@ -8,12 +8,12 @@
       "max": 0
     },
     "lowPriorityNodes": {
-      "min": 5,
-      "max": 5
+      "min": 2,
+      "max": 2
     },
     "autoscaleFormula": "QUEUE"
   },
-  "containerImage": "wegz/r-base-har",
+  "containerImage": "wegz/r-base-hitandrun",
   "rPackages": {
     "cran": [],
     "github": [],

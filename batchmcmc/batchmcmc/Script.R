@@ -1,4 +1,5 @@
 #Package installation if missing
+install.packages("Rcpp")
 install.packages("hitandrun")
 install.packages("devtools")
 devtools::install_github("Azure/rAzureBatch")
@@ -7,6 +8,7 @@ install.packages("bitops")
 
 # Load the doAzureParallel library 
 library(doAzureParallel)
+library("Rcpp")
 library("hitandrun")
 source("hpcutil.R")
 
@@ -17,19 +19,23 @@ source("hpcutil.R")
 # setwd("c:/code/batchmcmc/batchmcmc")
 
 
-
+#setting Azure credentials
 setCredentials("credentials.json")
-#creating the cluster
-clusterHPC <- makeCluster("clusterHPC.json")
-#if the cluster already created this command retrieve the cluster
-clusterHPC <- getCluster("mcmchpc6")
 
-#register the parallel methods on the cluster and check the parallel workers
-registerDoAzureParallel(clusterHPC)
-getDoParWorkers()
+#creating the cluster
+if (length(getClusterList()[,1]) ==0) {
+    clusterHPC <- makeCluster("clusterHPC.json")
+} else {
+    clusterHPC <- getCluster("mcmchpc6") #if the cluster already exists this command retrieve the cluster 
+    #register the parallel methods on the cluster and check the parallel workers
+    registerDoAzureParallel(clusterHPC)
+    getDoParWorkers()
+}
 
 #executes the har from teh source file entries
-harfileexec("rhs_Dim20.csv", "test-out2",  have1 = TRUE)
+harfileexec("rhs_Dim20.csv", "test-out2", have1 = TRUE)
 
-getJobResult("mcmc-60")
+getJobResult("test-out2-job")
+
+stopCluster(clusterHPC)
 

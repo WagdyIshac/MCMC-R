@@ -26,7 +26,7 @@ setwd("c:/code/mcmc/batchmcmc/batchmcmc")
 clusterHPC <- makeCluster("clusterHPC.json")
 
 #if the cluster already created this command retrieve the cluster
-clusterHPC <-getCluster("mcmchpc6")
+clusterHPC <- getCluster("mcmchpc6")
 
 #register the parallel methods on the cluster and check the parallel workers
 registerDoAzureParallel(clusterHPC)
@@ -63,11 +63,11 @@ storageClient <- rAzureBatch::StorageServiceClient$new(
 
 # Pushing output files by setting the account and foler (container)
 storageAccount <- "adiarmcmc"
-outputFolder <- "demoout"
+outputFolder <- "output11"
 
 storageClient$containerOperations$createContainer(outputFolder)
 writeToken <- storageClient$generateSasToken("w", "c", outputFolder)
-containerUrl <- rAzureBatch::createBlobUrl(storageAccount = storageAccount,
+containerUrl <- rAzureBatch::createBlobUrl(storageAccount = storageCredentials$name,
                                            containerName = outputFolder,
                                            sasToken = writeToken)
 
@@ -80,9 +80,37 @@ opt <- list(job = 'mcmc-50', wait = FALSE, outputFiles = list(output))
 #loop and dump the data
 foreach(i = 1:16, .packages = 'hitandrun', .options.azure = opt) %dopar% {
     r <- hitandrun(x, 1E4)
-    write.csv(r, paste0("output-",i,".csv"))
+    write.csv(r, paste0("output-", i, ".csv"))
 }
 
-getJobResult("mcmc-50")
+getJobResult("mcmc-60")
+
+
+harfileexec("rhs_Dim40.csv", have1 = TRUE)
+
+harfileexec <- function(filename, have1 = FALSE, fileoutputpatter = "output-") {
+    csvfile <- as.matrix(read.csv(file = filename, header = FALSE, sep = ","))
+    colnames(csvfile) <- NULL
+    if (!have1) {
+        rhsmatrix <- cbind(1, csvfile)
+    } else { rhsmatrix <- csvfile }
+    iterations <- length(rhsmatrix[, 1])
+    width <- length(rhsmatrix[1,]) - 1
+
+    output <- createOutputFile(paste0(fileoutputpatter,"*.csv"), containerUrl)
+    opt <- list(job = 'mcmc-60', wait = FALSE, outputFiles = list(output))
+    foreach(i = 1:16, .packages = 'hitandrun', .options.azure = opt) %dopar% {
+        y <- simplexConstraints(width)
+        x <- simplexConstraints(width / 2)
+        m <- rbind(x$constr, x$constr)
+        ml <- m[-(width / 2 + 2),]
+        y$constr <- ml
+        y$rhs <- rhsmatrix[i,]
+        r <- hitandrun(y, 1E4)
+        write.csv(r, paste0(fileoutputpatter, i, ".csv"))
+        i
+    }
+}
+
 
 

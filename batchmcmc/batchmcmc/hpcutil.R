@@ -1,6 +1,6 @@
 
 
-harfileexec <- function(filename, outputFoldername, have1 = FALSE, fileoutputpatter = "output-") {
+harfileexec <- function(filename, outputFoldername, have1 = FALSE, fileoutputpatter = "output-", fileoutputurl) {
     csvfile <- as.matrix(read.csv(file = filename, header = FALSE, sep = ","))
     colnames(csvfile) <- NULL
     if (!have1) {
@@ -8,20 +8,23 @@ harfileexec <- function(filename, outputFoldername, have1 = FALSE, fileoutputpat
     } else { rhsmatrix <- csvfile }
     iterations <- length(rhsmatrix[, 1])
     width <- length(rhsmatrix[1,]) - 1
+    y <- simplexConstraints(width)
+    x <- simplexConstraints(width / 2)
+    m <- rbind(x$constr, x$constr)
+    ml <- m[-(width / 2 + 2),]
+    y$constr <- ml
 
-    returnURL <- harSetAzureStorage(outputFoldername)
 
-    output <- createOutputFile(paste0(fileoutputpatter, "*.csv"), returnURL)
-    opt <- list(job = paste0(outputFoldername, '-job'), wait = FALSE, outputFiles = list(output))
-    foreach(i = 1:16, .packages = 'hitandrun', .options.azure = opt) %dopar% {
-        y <- simplexConstraints(width)
-        x <- simplexConstraints(width / 2)
-        m <- rbind(x$constr, x$constr)
-        ml <- m[-(width / 2 + 2),]
-        y$constr <- ml
+    output <- createOutputFile(paste0(fileoutputpatter, "*.csv"), fileoutputurl)
+    opt <- list(job = paste0(outputFoldername, '-job'), wait = TRUE, outputFiles = list(output))
+    foreach(i = 1:1020, .packages = 'hitandrun', .options.azure = opt) %dopar% {
         y$rhs <- rhsmatrix[i,]
-        r <- hitandrun(y, 1E4)
-        write.csv(r, paste0(fileoutputpatter, i, ".csv"))
+        for(runs in 1:5000) {
+            r <- hitandrun(y, 1E2, eliminate = FALSE)
+            rr <- shakeandbake(y, 1E2, eliminate = FALSE)
+            write.csv(round(r, 5), paste0(fileoutputpatter, "-har-", i, "-run-", runs, ".csv"))
+            write.csv(round(rr, 5), paste0(fileoutputpatter, "-sab-", i, "-run-", runs, ".csv"))
+        }
         i
     }
 }
@@ -57,11 +60,11 @@ harSetAzureStorage <- function(foldername) {
 
 #preparing the matirx and running the function
 harTestFunction <- function() {
-    x <- simplexConstraints(24)
+    x <- simplexConstraints(10)
 
     #running a small sample
     start_p <- Sys.time()
-    results100 <- foreach::foreach(i = 1:100, .packages = 'hitandrun') %dopar% { hitandrun(x, 1E4) }
+    results100 <- foreach::foreach(i = 1:4, .packages = 'hitandrun') %do% { hitandrun(x, 1E2) }
     end_p <- Sys.time()
     return(results100)
 }

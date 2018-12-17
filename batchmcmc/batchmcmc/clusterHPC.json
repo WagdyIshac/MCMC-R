@@ -1,6 +1,6 @@
 {
   "name": "mcmchpc6",
-  "vmSize": "Standard_F16",
+  "vmSize": "Standard_H16",
   "maxTasksPerNode": 16,
   "poolSize": {
     "dedicatedNodes": {
@@ -8,8 +8,8 @@
       "max": 0
     },
     "lowPriorityNodes": {
-      "min": 6,
-      "max": 6
+      "min": 4,
+      "max": 4
     },
     "autoscaleFormula": "QUEUE"
   },

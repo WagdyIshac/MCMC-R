@@ -1,6 +1,6 @@
 {
-  "name": "mcmchpc6",
-  "vmSize": "Standard_H16",
+  "name": "mcmchpc777",
+  "vmSize": "Standard_F16",
   "maxTasksPerNode": 16,
   "poolSize": {
     "dedicatedNodes": {
@@ -8,14 +8,14 @@
       "max": 0
     },
     "lowPriorityNodes": {
-      "min": 4,
-      "max": 4
+      "min": 5,
+      "max": 5
     },
     "autoscaleFormula": "QUEUE"
   },
   "containerImage": "wegz/r-base-hitandrun",
   "rPackages": {
-    "cran": [],
+    "cran": [ "PerformanceAnalytics" ],
     "github": [],
     "bioconductor": []
   },

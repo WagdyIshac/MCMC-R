@@ -28,14 +28,20 @@ harfileexec <- function(filename, outputFoldername, have1 = FALSE, fileoutputpat
     }
 }
 
-harfileexec2 <- function(filename, extraAmmendment, fileoutputpatter = "output-", fileoutputurl) {
+harfileexec2 <- function(filename, extraAmmendment, anchor, ammendedfileExists, fileoutputpatter = "output-", fileoutputurl) {
     csvfile <- as.matrix(read.csv(file = filename, header = FALSE, sep = ","))
-    extraAmmendment <- as.matrix(read.csv(file = extraAmmendment, header = FALSE, sep = ","))
-    #csvfile <- as.matrix(read.csv(file = "data2/file1Test.csv", header = FALSE, sep = ","))
-    #extraAmmendment <- as.matrix(read.csv(file = "data2/file2Test.csv", header = FALSE, sep = ","))
-    funds <- as.matrix(read.csv(file = "data2/dataFile1Test.csv", header = FALSE, sep = ","))
-    anchor <- as.matrix(read.csv(file = "data2/file3Test.csv", header = FALSE, sep = ","))
-    refdata <- as.matrix(read.csv(file = "data2/dataFile2Test.csv", header = FALSE, sep = ","))
+    if (ammendedfileExists == 1) {
+        extraAmmendment <- as.matrix(read.csv(file = extraAmmendment, header = FALSE, sep = ","))
+    }
+    #csvfile <- as.matrix(read.csv(file = "Test24Feb2019/file1_178_13.csv", header = FALSE, sep = ","))
+    #extraAmmendment <- as.matrix(read.csv(file = "Test24Feb2019/file2_178_13.csv", header = FALSE, sep = ","))
+    #anchor <- as.matrix(read.csv(file = "Test24Feb2019/file3_178_13.csv", header = FALSE, sep = ","))
+    anchor <- as.matrix(read.csv(file = anchor, header = FALSE, sep = ","))
+
+    funds <- as.matrix(read.csv(file = "Test27Feb2019/dataFile1Test.csv", header = FALSE, sep = ","))
+    refdata <- as.matrix(read.csv(file = "Test27Feb2019/dataFile2Test.csv", header = FALSE, sep = ","))
+
+    print("loading finished...")
 
     colnames(csvfile) <- NULL
     rhsmatrix <- csvfile
@@ -48,10 +54,11 @@ harfileexec2 <- function(filename, extraAmmendment, fileoutputpatter = "output-"
     ml[1,] <- ml[1,] * -1
     y$constr <- ml
 
+    print("initiation finished...")
 
     output <- createOutputFile(paste0(fileoutputpatter, "*.csv"), fileoutputurl)
-    opt <- list(job = paste0(outputFoldername, '-job'), wait = TRUE, outputFiles = list(output), merge = FALSE)
-    foreach::foreach(i = 1:iterations, .options.azure = opt) %dopar% {
+    opt <- list(job = paste0(outputFoldername, '-job'), wait = TRUE, outputFiles = list(output), enableCloudCombine = TRUE)
+    foreach::foreach(i = i:iterations, .options.azure = opt) %dopar% {
         library('hitandrun')
         library('PerformanceAnalytics')
         #foreach::foreach(i = 1:iterations) %do% {
@@ -61,17 +68,22 @@ harfileexec2 <- function(filename, extraAmmendment, fileoutputpatter = "output-"
         rhsmatrix[i, (dim + 3):length(rhsmatrix[1,])] <- lb
         y$rhs <- rhsmatrix[i, 2:length(rhsmatrix[1,])]
 
-
         r <- hitandrun(y, 1E2, eliminate = FALSE)
         rr <- shakeandbake(y, 1E2, eliminate = FALSE)
+
         otpt <- rbind(r, rr)
-        newM = matrix(rep(extraAmmendment[i, 1:rhsmatrix[i, 1]], 200),
+        ammended <- NULL
+        if (ammendedfileExists == 1) {
+            newM = matrix(rep(extraAmmendment[i, 1:rhsmatrix[i, 1]], 200),
          ncol = rhsmatrix[i, 1],
          byrow = 200)
-        ammended <- cbind(otpt, newM)
+            ammended <- cbind(otpt, newM)
+        } else { ammended <- otpt }
+
+
         write.csv(round(ammended, 5), paste0(fileoutputpatter, "-harsab-", i, ".csv"))
         #write.csv(round(ammended, 5), paste0("dataout/testcombine2", "-harsab-", i, ".csv"))
-        i
+        #i
         #####################################################################################
         ############ Times Series Generation ################################################
         ammendedT = t(ammended)
@@ -82,9 +94,12 @@ harfileexec2 <- function(filename, extraAmmendment, fileoutputpatter = "output-"
         pastinterval <- funds[startpos:anchor[i, 1],]
         pastI <- pastinterval[, anchor[i, 2:(len + 1)]]
         timeseries <- pastI %*% ammendedT
+        ###########################fix anchor point for late times - Done
+        ###########################include IDs
+        ###########################check for the zero for no ammendment files - Done
+        ###########################load data files in memory
 
         refdatabackward <- refdata[(anchor[i] - 35):(anchor[i]),]
-        refdataforward <- refdata[(anchor[i] + 1):(anchor[i] + 36),]
 
         BackwardAnn <- matrix(, nrow = 200, ncol = 3)
 
@@ -93,7 +108,7 @@ harfileexec2 <- function(filename, extraAmmendment, fileoutputpatter = "output-"
         lmBackward2 <- matrix(, nrow = 200, ncol = 5)
 
         for (bb in 1:length(timeseries[1, ])) {
-            BackwardAnn[bb, 1] <- sd(timeseries[,bb]) * sqrt(12)
+            BackwardAnn[bb, 1] <- sd(timeseries[, bb]) * sqrt(12)
             BackwardAnn[bb, 2] <- Return.annualized(timeseries[, bb], scale = 12)
             BackwardAnn[bb, 3] <- maxDrawdown(timeseries[, bb])
 
@@ -116,6 +131,7 @@ harfileexec2 <- function(filename, extraAmmendment, fileoutputpatter = "output-"
 
         }
 
+
         write.csv(timeseries, paste0(fileoutputpatter, "-timeseries-backward-", i, ".csv"))
         write.csv(BackwardAnn, paste0(fileoutputpatter, "-timeseries-Backward-Annual-", i, ".csv"))
 
@@ -125,17 +141,27 @@ harfileexec2 <- function(filename, extraAmmendment, fileoutputpatter = "output-"
 
 
         #forward
-        forwardInterval <- funds[(anchor[i, 1]+1):(anchor[i, 1] + 36),]
+        endpos <- (anchor[i, 1] + 36)
+        forwardLength <- 36
+        if ((anchor[i, 1] + 36) > length(funds[, i]))
+            {
+            endpos <- length(funds[, i])
+            forwardLength <- (endpos - (anchor[i, 1]))
+        }
+        forwardInterval <- funds[(anchor[i, 1] + 1):endpos,]
         forwardI <- forwardInterval[, anchor[i, 2:(len + 1)]]
         forwardI <- forwardI + 1
-        allforward = matrix(rep(1, 36),
+        allforward = matrix(rep(1, forwardLength),
          ncol = 1,
-         byrow = 36)
+         byrow = forwardLength)
 
         allcov <- double(0)
         allAnn <- double(0)
 
-        ForwardCov <- matrix(, nrow = 200, ncol = length(refdata[1,]))
+        refdataforward <- refdata[(anchor[i] + 1):endpos,]
+
+
+        #ForwardCov <- matrix(, nrow = 200, ncol = length(refdata[1,]))
         ForwardAnn <- matrix(, nrow = 200, ncol = 3)
         lmForward12 <- matrix(, nrow = 200, ncol = 7)
         lmForward1 <- matrix(, nrow = 200, ncol = 5)
@@ -146,11 +172,11 @@ harfileexec2 <- function(filename, extraAmmendment, fileoutputpatter = "output-"
             forwardMain <- rbind(ammended[kk,], forwardI)
             forwardMain <- apply(forwardMain, 2, cumprod)
             forwardRow <- rowSums(forwardMain)
-            forwarddiffs <- (forwardRow[2:37] / forwardRow[1:36]) - 1
+            forwarddiffs <- (forwardRow[2:(forwardLength + 1)] / forwardRow[1:forwardLength]) - 1
             allforward <- cbind(allforward, forwarddiffs)
 
 
-       #}
+            #}
             ################ FIX THE LENGTH
             ###Calcs
             allAnn[1] <- sd(forwarddiffs) * sqrt(12)
@@ -161,11 +187,11 @@ harfileexec2 <- function(filename, extraAmmendment, fileoutputpatter = "output-"
 
 
 
-            for (covi in 1:length(refdata[1, ])) {
-                covVal = cov(forwarddiffs, refdataforward[,covi])
-                allcov[covi] <- covVal
-            }
-            ForwardCov[kk,] <- allcov
+            #for (covi in 1:length(refdata[1, ])) {
+            #covVal = cov(forwarddiffs, refdataforward[,covi])
+            #allcov[covi] <- covVal
+            #}
+            #ForwardCov[kk,] <- allcov
 
             ResForward12 = lm(forwarddiffs ~ refdataforward[, 1] + refdataforward[, 2])
             ResForward1 = lm(forwarddiffs ~ refdataforward[, 1])
@@ -185,9 +211,11 @@ harfileexec2 <- function(filename, extraAmmendment, fileoutputpatter = "output-"
 
 
         }
-        write.csv(allforward[,2:201], paste0(fileoutputpatter, "-timeseries-forward-", i, ".csv"))
+
+
+        write.csv(allforward[, 2:201], paste0(fileoutputpatter, "-timeseries-forward-", i, ".csv"))
         write.csv(ForwardAnn, paste0(fileoutputpatter, "-timeseries-forward-Annual-", i, ".csv"))
-        write.csv(ForwardCov, paste0(fileoutputpatter, "-timeseries-forward-Covarience-", i, ".csv"))
+        # write.csv(ForwardCov, paste0(fileoutputpatter, "-timeseries-forward-Covarience-", i, ".csv"))
 
         write.csv(lmForward12, paste0(fileoutputpatter, "-timeseries-forward-lmForward12-", i, ".csv"))
         write.csv(lmForward1, paste0(fileoutputpatter, "-timeseries-forward-lmForward1-", i, ".csv"))
@@ -240,7 +268,7 @@ harfileexecRUNLOCAL <- function(filename, extraAmmendment, fileoutputpatter = "o
         ammended <- cbind(otpt, newM)
         #write.csv(round(ammended, 5), paste0(fileoutputpatter, "-harsab-", i, ".csv"))
         write.csv(round(ammended, 5), paste0("dataout2/testcombine2", "-harsab-", i, ".csv"))
-        i
+        #i
         #####################################################################################
         ############ Times Series Generation ################################################
         ammendedT = t(ammended)
@@ -324,7 +352,7 @@ harfileexecRUNLOCAL <- function(filename, extraAmmendment, fileoutputpatter = "o
 }
 
 harSetAzureStorage <- function(foldername) {
-    config <- rjson::fromJSON(file = paste0("credentials.json"))
+    config <- rjson::fromJSON(file = paste0("credentials55.json"))
 
     storageCredentials <- rAzureBatch::SharedKeyCredentials$new(
   name = config$storageAccount$name,

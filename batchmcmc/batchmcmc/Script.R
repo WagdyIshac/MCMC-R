@@ -43,7 +43,7 @@ registerDoAzureParallel(clusterHPC77)
 getDoParWorkers()
 
 #executes the har from teh source file entries
-outputFoldername <- "test27feb201907"
+outputFoldername <- "test27feb201907idtest7"
 returnURL <- harSetAzureStorage(outputFoldername)
 start_p <- Sys.time()
 #harfileexec("rhs_Dim10.csv", outputFoldername, have1 = TRUE, fileoutputurl = returnURL)
@@ -53,6 +53,8 @@ out.file <- ""
 file1 <- dir(path, pattern = "file1{1}",full.names = FALSE)
 file2 <- dir(path, pattern = "file2{1}", full.names = FALSE)
 file3 <- dir(path, pattern = "file3{1}", full.names = FALSE)
+idFiles <- dir(path, pattern = "idFile{1}", full.names = FALSE)
+
 
 for (i in 1:length(file1)) {
 
@@ -61,12 +63,12 @@ for (i in 1:length(file1)) {
         {
         outputFoldername <- paste0(gsub(".csv","", gsub("_","",file1[i])), "-20190228")
         returnURL <- harSetAzureStorage(outputFoldername)
-        harfileexec2(paste0(path, file1[i]), NULL, paste0(path, file3[i]), 0, outputFoldername, fileoutputurl = returnURL)
+        harfileexec2(paste0(path, file1[i]), NULL, paste0(path, file3[i]), paste0(path, idFiles[i]), 0, outputFoldername, fileoutputurl = returnURL)
 
     } else {
         outputFoldername <- paste0(gsub(".csv", "", gsub("_", "", file1[i])), "-20190228")
         returnURL <- harSetAzureStorage(outputFoldername)
-        harfileexec2(paste0(path, file1[i]), paste0(path, file2[i]), paste0(path, file3[i]), 1, outputFoldername, fileoutputurl = returnURL)
+        harfileexec2(paste0(path, file1[i]), paste0(path, file2[i]), paste0(path, file3[i]), paste0(path, idFiles[i]), 1, outputFoldername, fileoutputurl = returnURL )
 
     }
 }

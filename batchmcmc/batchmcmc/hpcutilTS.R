@@ -1,34 +1,8 @@
 
 
-harfileexec <- function(filename, outputFoldername, have1 = FALSE, fileoutputpatter = "output-", fileoutputurl, numberofruns) {
-    csvfile <- as.matrix(read.csv(file = filename, header = FALSE, sep = ","))
-    colnames(csvfile) <- NULL
-    if (!have1) {
-        rhsmatrix <- cbind(1, csvfile)
-    } else { rhsmatrix <- csvfile }
-    iterations <- length(rhsmatrix[, 1])
-    width <- length(rhsmatrix[1,]) - 1
-    y <- simplexConstraints(width)
-    x <- simplexConstraints(width / 2)
-    m <- rbind(x$constr, x$constr)
-    ml <- m[-(width / 2 + 2),]
-    y$constr <- ml
 
 
-    output <- createOutputFile(paste0(fileoutputpatter, "*.csv"), fileoutputurl)
-    opt <- list(job = paste0(outputFoldername, '-job'), wait = TRUE, outputFiles = list(output), merge = FALSE)
-    foreach::foreach(i = 1:iterations, .packages = ('hitandrun'), .options.azure = opt) %dopar% {
-
-        y$rhs <- rhsmatrix[i,]
-        r <- hitandrun(y, 1E2, eliminate = FALSE)
-        rr <- shakeandbake(y, 1E2, eliminate = FALSE)
-        otpt <- rbind(r, rr)
-        write.csv(round(otpt, 5), paste0(fileoutputpatter, "-harsab-", i, ".csv"))
-        i
-    }
-}
-
-harfileexec2 <- function(filename, extraAmmendment, anchor, ammendedfileExists, fileoutputpatter = "output-", fileoutputurl) {
+harfileexec2 <- function(filename, extraAmmendment, anchor, idfile, ammendedfileExists, fileoutputpatter = "output-", fileoutputurl) {
     csvfile <- as.matrix(read.csv(file = filename, header = FALSE, sep = ","))
     if (ammendedfileExists == 1) {
         extraAmmendment <- as.matrix(read.csv(file = extraAmmendment, header = FALSE, sep = ","))
@@ -37,6 +11,7 @@ harfileexec2 <- function(filename, extraAmmendment, anchor, ammendedfileExists, 
     #extraAmmendment <- as.matrix(read.csv(file = "Test24Feb2019/file2_178_13.csv", header = FALSE, sep = ","))
     #anchor <- as.matrix(read.csv(file = "Test24Feb2019/file3_178_13.csv", header = FALSE, sep = ","))
     anchor <- as.matrix(read.csv(file = anchor, header = FALSE, sep = ","))
+    idfile <- as.matrix(read.csv(file = idfile, header = FALSE, sep = ","))
 
     funds <- as.matrix(read.csv(file = "Test27Feb2019/dataFile1Test.csv", header = FALSE, sep = ","))
     refdata <- as.matrix(read.csv(file = "Test27Feb2019/dataFile2Test.csv", header = FALSE, sep = ","))
@@ -54,11 +29,12 @@ harfileexec2 <- function(filename, extraAmmendment, anchor, ammendedfileExists, 
     ml[1,] <- ml[1,] * -1
     y$constr <- ml
 
+
     print("initiation finished...")
 
     output <- createOutputFile(paste0(fileoutputpatter, "*.csv"), fileoutputurl)
-    opt <- list(job = paste0(outputFoldername, '-job'), wait = TRUE, outputFiles = list(output), enableCloudCombine = TRUE)
-    foreach::foreach(i = i:iterations, .options.azure = opt) %dopar% {
+    opt <- list(wait = TRUE, outputFiles = list(output), enableCloudCombine = FALSE, setAutoDeleteJob = FALSE)
+    foreach::foreach(i = i:20, .options.azure = opt) %dopar% {
         library('hitandrun')
         library('PerformanceAnalytics')
         #foreach::foreach(i = 1:iterations) %do% {
@@ -80,8 +56,10 @@ harfileexec2 <- function(filename, extraAmmendment, anchor, ammendedfileExists, 
             ammended <- cbind(otpt, newM)
         } else { ammended <- otpt }
 
+        theid = idfile[i, 1]
 
-        write.csv(round(ammended, 5), paste0(fileoutputpatter, "-harsab-", i, ".csv"))
+
+        write.csv(cbind(theid, round(ammended, 5)), paste0(fileoutputpatter, "-harsab\\", theid, ".csv"))
         #write.csv(round(ammended, 5), paste0("dataout/testcombine2", "-harsab-", i, ".csv"))
         #i
         #####################################################################################
@@ -132,12 +110,12 @@ harfileexec2 <- function(filename, extraAmmendment, anchor, ammendedfileExists, 
         }
 
 
-        write.csv(timeseries, paste0(fileoutputpatter, "-timeseries-backward-", i, ".csv"))
-        write.csv(BackwardAnn, paste0(fileoutputpatter, "-timeseries-Backward-Annual-", i, ".csv"))
+        write.csv(cbind(theid, timeseries), paste0(fileoutputpatter, "-timeseries-backward", theid, ".csv"))
+        write.csv(cbind(theid, BackwardAnn), paste0(fileoutputpatter, "-timeseries-Backward-Annual", theid, ".csv"))
 
-        write.csv(lmBackward12, paste0(fileoutputpatter, "-timeseries-Backward-lmBackward12-", i, ".csv"))
-        write.csv(lmBackward1, paste0(fileoutputpatter, "-timeseries-Backward-lmBackward1-", i, ".csv"))
-        write.csv(lmBackward2, paste0(fileoutputpatter, "-timeseries-Backward-lmBackward2-", i, ".csv"))
+        write.csv(cbind(theid, lmBackward12), paste0(fileoutputpatter, "-timeseries-Backward-lmBackward12", theid, ".csv"))
+        write.csv(cbind(theid, lmBackward1), paste0(fileoutputpatter, "-timeseries-Backward-lmBackward1", theid, ".csv"))
+        write.csv(cbind(theid, lmBackward2), paste0(fileoutputpatter, "-timeseries-Backward-lmBackward2", theid, ".csv"))
 
 
         #forward
@@ -213,17 +191,17 @@ harfileexec2 <- function(filename, extraAmmendment, anchor, ammendedfileExists, 
         }
 
 
-        write.csv(allforward[, 2:201], paste0(fileoutputpatter, "-timeseries-forward-", i, ".csv"))
-        write.csv(ForwardAnn, paste0(fileoutputpatter, "-timeseries-forward-Annual-", i, ".csv"))
+        write.csv(cbind(theid, allforward[, 2:201]), paste0(fileoutputpatter, "-timeseries-forward", theid, ".csv"))
+        write.csv(cbind(theid, ForwardAnn), paste0(fileoutputpatter, "-timeseries-forward-Annual", theid, ".csv"))
         # write.csv(ForwardCov, paste0(fileoutputpatter, "-timeseries-forward-Covarience-", i, ".csv"))
 
-        write.csv(lmForward12, paste0(fileoutputpatter, "-timeseries-forward-lmForward12-", i, ".csv"))
-        write.csv(lmForward1, paste0(fileoutputpatter, "-timeseries-forward-lmForward1-", i, ".csv"))
-        write.csv(lmForward2, paste0(fileoutputpatter, "-timeseries-forward-lmForward2-", i, ".csv"))
+        write.csv(cbind(theid, lmForward12), paste0(fileoutputpatter, "-timeseries-forward-lmForward12", theid, ".csv"))
+        write.csv(cbind(theid, lmForward1), paste0(fileoutputpatter, "-timeseries-forward-lmForward1", theid, ".csv"))
+        write.csv(cbind(theid, lmForward2), paste0(fileoutputpatter, "-timeseries-forward-lmForward2", theid, ".csv"))
 
         ###################################################################################
         ################## Time series  calculations ###############################
-
+        return(NULL)
     }
 }
 
@@ -246,7 +224,7 @@ harfileexecRUNLOCAL <- function(filename, extraAmmendment, fileoutputpatter = "o
 
 
     #output <- createOutputFile(paste0(fileoutputpatter, "*.csv"), fileoutputurl)
-    #opt <- list(job = paste0(outputFoldername, '-job'), wait = TRUE, outputFiles = list(output), merge = FALSE)
+    #opt <- list(job = paste0(, '-job'), wait = TRUE, outputFiles = list(output), merge = FALSE)
     #foreach::foreach(i = 1:iterations, .options.azure = opt) %do% {
     #library('hitandrun')
     #library('PerformanceAnalytics')

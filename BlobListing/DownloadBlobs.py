@@ -11,13 +11,14 @@ container_name ='simdata'
 # Set the permission so the blobs are public.
 #block_blob_service.set_container_acl(container_name, public_access=PublicAccess.Container)
 ids = sys.argv[1]
-referencefolders =['simdata-timeseries-backward/','simdata-timeseries-Backward-Annual/','simdata-timeseries-Backward-lmBackward12/','simdata-timeseries-Backward-lmBackward1/','simdata-timeseries-Backward-lmBackward2/', 'simdata-timeseries-forward', 'simdata-timeseries-forward-Annual/'  , 'simdata-timeseries-forward-lmForward12/', 'simdata-timeseries-forward-lmForward1/','simdata-timeseries-forward-lmForward2/']
+referencefolders =['simdata-timeseries-backward/','simdata-timeseries-Backward-Annual/','simdata-timeseries-Backward-lmBackward12/','simdata-timeseries-Backward-lmBackward1/','simdata-timeseries-Backward-lmBackward2/', 'simdata-timeseries-forward/', 'simdata-timeseries-forward-Annual/'  , 'simdata-timeseries-forward-lmForward12/', 'simdata-timeseries-forward-lmForward1/','simdata-timeseries-forward-lmForward2/']
 local_path = "C:\Code\mcmc\BlobListing\\"
 for refF in referencefolders:
     foldername = refF + ids
     directory = os.path.dirname(foldername)
-    if not os.path.exists(directory):
-        os.makedirs(directory)
+    if not os.path.exists(refF):
+        print("DIRECTORY***************:: " +refF)
+        os.makedirs(refF)
     generator = block_blob_service.list_blobs(container_name, prefix=foldername)
     print('\nList blobs in the container '+foldername)
     i=0

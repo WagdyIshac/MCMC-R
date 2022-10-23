@@ -33,8 +33,8 @@ harfileexec2 <- function(filename, extraAmmendment, anchor, idfile, ammendedfile
     print("initiation finished...")
 
     output <- createOutputFile(paste0(fileoutputpatter, "*.csv"), fileoutputurl)
-    opt <- list(wait = TRUE, outputFiles = list(output), enableCloudCombine = FALSE, setAutoDeleteJob = FALSE)
-    foreach::foreach(i = i:20, .options.azure = opt) %dopar% {
+    opt <- list(wait = FALSE, outputFiles = list(output), enableCloudCombine = FALSE, setAutoDeleteJob = FALSE, chunkSize = 5)
+    foreach::foreach(i = i:400, .options.azure = opt) %dopar% {
         library('hitandrun')
         library('PerformanceAnalytics')
         #foreach::foreach(i = 1:iterations) %do% {
@@ -64,6 +64,8 @@ harfileexec2 <- function(filename, extraAmmendment, anchor, idfile, ammendedfile
         #i
         #####################################################################################
         ############ Times Series Generation ################################################
+        ###############################################################################
+
         ammendedT = t(ammended)
 
         #backward
@@ -72,10 +74,10 @@ harfileexec2 <- function(filename, extraAmmendment, anchor, idfile, ammendedfile
         pastinterval <- funds[startpos:anchor[i, 1],]
         pastI <- pastinterval[, anchor[i, 2:(len + 1)]]
         timeseries <- pastI %*% ammendedT
-        ###########################fix anchor point for late times - Done
-        ###########################include IDs
-        ###########################check for the zero for no ammendment files - Done
-        ###########################load data files in memory
+
+        ###############################################################################
+        ############ Standalone Calculations ##########################################
+        ###############################################################################
 
         refdatabackward <- refdata[(anchor[i] - 35):(anchor[i]),]
 
@@ -110,12 +112,12 @@ harfileexec2 <- function(filename, extraAmmendment, anchor, idfile, ammendedfile
         }
 
 
-        write.csv(cbind(theid, timeseries), paste0(fileoutputpatter, "-timeseries-backward", theid, ".csv"))
-        write.csv(cbind(theid, BackwardAnn), paste0(fileoutputpatter, "-timeseries-Backward-Annual", theid, ".csv"))
+        write.csv(cbind(theid, timeseries), paste0(fileoutputpatter, "-timeseries-backward\\", theid, ".csv"))
+        write.csv(cbind(theid, BackwardAnn), paste0(fileoutputpatter, "-timeseries-Backward-Annual\\", theid, ".csv"))
 
-        write.csv(cbind(theid, lmBackward12), paste0(fileoutputpatter, "-timeseries-Backward-lmBackward12", theid, ".csv"))
-        write.csv(cbind(theid, lmBackward1), paste0(fileoutputpatter, "-timeseries-Backward-lmBackward1", theid, ".csv"))
-        write.csv(cbind(theid, lmBackward2), paste0(fileoutputpatter, "-timeseries-Backward-lmBackward2", theid, ".csv"))
+        write.csv(cbind(theid, lmBackward12), paste0(fileoutputpatter, "-timeseries-Backward-lmBackward12\\", theid, ".csv"))
+        write.csv(cbind(theid, lmBackward1), paste0(fileoutputpatter, "-timeseries-Backward-lmBackward1\\", theid, ".csv"))
+        write.csv(cbind(theid, lmBackward2), paste0(fileoutputpatter, "-timeseries-Backward-lmBackward2\\", theid, ".csv"))
 
 
         #forward
@@ -191,13 +193,13 @@ harfileexec2 <- function(filename, extraAmmendment, anchor, idfile, ammendedfile
         }
 
 
-        write.csv(cbind(theid, allforward[, 2:201]), paste0(fileoutputpatter, "-timeseries-forward", theid, ".csv"))
-        write.csv(cbind(theid, ForwardAnn), paste0(fileoutputpatter, "-timeseries-forward-Annual", theid, ".csv"))
+        write.csv(cbind(theid, allforward[, 2:201]), paste0(fileoutputpatter, "-timeseries-forward\\", theid, ".csv"))
+        write.csv(cbind(theid, ForwardAnn), paste0(fileoutputpatter, "-timeseries-forward-Annual\\", theid, ".csv"))
         # write.csv(ForwardCov, paste0(fileoutputpatter, "-timeseries-forward-Covarience-", i, ".csv"))
 
-        write.csv(cbind(theid, lmForward12), paste0(fileoutputpatter, "-timeseries-forward-lmForward12", theid, ".csv"))
-        write.csv(cbind(theid, lmForward1), paste0(fileoutputpatter, "-timeseries-forward-lmForward1", theid, ".csv"))
-        write.csv(cbind(theid, lmForward2), paste0(fileoutputpatter, "-timeseries-forward-lmForward2", theid, ".csv"))
+        write.csv(cbind(theid, lmForward12), paste0(fileoutputpatter, "-timeseries-forward-lmForward12\\", theid, ".csv"))
+        write.csv(cbind(theid, lmForward1), paste0(fileoutputpatter, "-timeseries-forward-lmForward1\\", theid, ".csv"))
+        write.csv(cbind(theid, lmForward2), paste0(fileoutputpatter, "-timeseries-forward-lmForward2\\", theid, ".csv"))
 
         ###################################################################################
         ################## Time series  calculations ###############################

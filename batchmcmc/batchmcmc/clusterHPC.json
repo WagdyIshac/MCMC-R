@@ -1,15 +1,15 @@
 {
-  "name": "mcmchpc777",
-  "vmSize": "Standard_F16",
-  "maxTasksPerNode": 16,
+  "name": "mcmcdemo",
+  "vmSize": "Standard_F4",
+  "maxTasksPerNode": 4,
   "poolSize": {
     "dedicatedNodes": {
-      "min": 0,
-      "max": 0
+      "min": 2,
+      "max": 2
     },
     "lowPriorityNodes": {
-      "min": 5,
-      "max": 5
+      "min": 20,
+      "max": 20
     },
     "autoscaleFormula": "QUEUE"
   },

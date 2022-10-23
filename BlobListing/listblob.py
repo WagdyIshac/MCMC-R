@@ -10,31 +10,37 @@ container_name ='simdata'
 
 # Set the permission so the blobs are public.
 #block_blob_service.set_container_acl(container_name, public_access=PublicAccess.Container)
-ids = sys.argv[0]
-referencefolders =['simdata-timeseries-backward/','simdata-timeseries-Backward-Annual/','simdata-timeseries-Backward-lmBackward12/','simdata-timeseries-Backward-lmBackward1/','simdata-timeseries-Backward-lmBackward2/', 'simdata-timeseries-forward', 'simdata-timeseries-forward-Annual/'  , 'simdata-timeseries-forward-lmForward12/', 'simdata-timeseries-forward-lmForward1/','simdata-timeseries-forward-lmForward2/']
+ids = sys.argv[1]
+backward ='simdata-timeseries-backward/'
+BackwardAnn= "simdata-timeseries-Backward-Annual/"
+lmBackward12= "simdata-timeseries-Backward-lmBackward12/"
+lmBackward1= "simdata-timeseries-Backward-lmBackward1/"
+lmBackward2= "simdata-timeseries-Backward-lmBackward2/"
+forward = 'simdata-timeseries-forward'
+forwardAnnual = 'simdata-timeseries-forward-Annual/'  
+lmForward12=  'simdata-timeseries-forward-lmForward12/'
+lmForward1='simdata-timeseries-forward-lmForward1/'
+lmForward2 ='simdata-timeseries-forward-lmForward2/'
 
-for(refF in referencefolders)
-    foldername = refF + ids
-    generator = block_blob_service.list_blobs(container_name, prefix=foldername)
-    print('\nList blobs in the container')
-    i=0
-    allnames =''
+folder = lmBackward1+ids
+print(folder)
+generator = block_blob_service.list_blobs(container_name, prefix=folder)
+print('\nList blobs in the container')
+i=0
+allnames =''
 
-    with open('AllIDs2.csv', 'a') as csvfile:
-        size = 0
-        for blob in generator:
-            i = i+1
-            blobname = re.sub(folder,'',blob.name)
-            ull_path_to_file2 = os.path.join(local_path, string.replace(blobname ,'.csv', '_DOWNLOADED.csv'))
-            block_blob_service.get_blob_to_path(container_name, blobname, full_path_to_file2)
-            #blobname = re.sub(folder,'',blob.name)
-            #blobname = re.sub('.csv',',',blobname)
-            #allnames += blobname
-            size += len(blobname)
-        #wr.writerow(ids)
-            sys.stdout.write('Download progress: %d%%   \r' % i )
-            sys.stdout.flush()
-            #csvfile.write(blobname)#np.savetxt('runids.csv', ids, delimiter=',', fmt='%s')
-        
+with open(ids+'.csv', 'a') as csvfile:
+    size = 0
+    for blob in generator:
+        i = i+1
+        blobname = re.sub(folder,'',blob.name)
+        blobname = re.sub('.csv',',',blobname)
+        #allnames += blobname
+        size += len(blobname)
+    #wr.writerow(ids)
+        sys.stdout.write('Download progress: %d%%   \r' % i )
+        sys.stdout.flush()
+        csvfile.write(blobname)#np.savetxt('runids.csv', ids, delimiter=',', fmt='%s')
+    
 print('\ndata dumped')
 

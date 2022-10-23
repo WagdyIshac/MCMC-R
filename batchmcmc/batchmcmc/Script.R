@@ -1,11 +1,10 @@
 #Package installation if missing
 install.packages("Rcpp")
 install.packages("hitandrun")
-install.packages("devtools", force= TRUE)
-devtools::install_github("Azure/rAzureBatch", force = TRUE)
-devtools::install_github("Azure/doAzureParallel@stable", force = TRUE)
-#devtools::install_github("WagdyIshac/doAzureParallel", force = TRUE)
-devtools::install_github("Azure/doAzureParallel@master", force = TRUE)
+install.packages("devtools")
+devtools::install_github("Azure/rAzureBatch")#, force = TRUE)
+1#devtools::install_github("WagdyIshac/doAzureParallel", force = TRUE)
+devtools::install_github("Azure/doAzureParallel", force = TRUE)
 install.packages("bitops")
 install.packages("PerformanceAnalytics")
 
@@ -13,7 +12,7 @@ install.packages("PerformanceAnalytics")
 #update.packages("hitandrun")
 update.packages("devtools")
 #update.packages("bitops")
-setwd("c:/code/mcmc/batchmcmc/batchmcmc")
+setwd("c:/mcmc/batchmcmc/batchmcmc")
 # Load the doAzureParallel library 
 library(doAzureParallel)
 library("Rcpp")
@@ -43,11 +42,11 @@ registerDoAzureParallel(clusterHPC77)
 getDoParWorkers()
 
 #executes the har from teh source file entries
-outputFoldername <- "test27feb201907idtest7"
+outputFoldername <- "mubadalaseconddemo"
 returnURL <- harSetAzureStorage(outputFoldername)
 start_p <- Sys.time()
-#harfileexec("rhs_Dim10.csv", outputFoldername, have1 = TRUE, fileoutputurl = returnURL)
 
+###Load files################################################
 path = "Test27Feb2019/"
 out.file <- ""
 file1 <- dir(path, pattern = "file1{1}",full.names = FALSE)
@@ -61,17 +60,21 @@ for (i in 1:length(file1)) {
     file <- as.matrix(read.csv(file = paste0(path, file1[i]), header = FALSE, sep = ","))
     if (file[1, 1] == 0)
         {
-        outputFoldername <- paste0(gsub(".csv","", gsub("_","",file1[i])), "-20190228")
-        returnURL <- harSetAzureStorage(outputFoldername)
+        outputFoldername <- paste0(gsub(".csv","", gsub("_","",file1[i])), "-20211115")
+        #returnURL <- harSetAzureStorage(outputFoldername)
         harfileexec2(paste0(path, file1[i]), NULL, paste0(path, file3[i]), paste0(path, idFiles[i]), 0, outputFoldername, fileoutputurl = returnURL)
 
     } else {
-        outputFoldername <- paste0(gsub(".csv", "", gsub("_", "", file1[i])), "-20190228")
-        returnURL <- harSetAzureStorage(outputFoldername)
+        outputFoldername <- paste0(gsub(".csv", "", gsub("_", "", file1[i])), "-20211115")
+        #returnURL <- harSetAzureStorage(outputFoldername)
         harfileexec2(paste0(path, file1[i]), paste0(path, file2[i]), paste0(path, file3[i]), paste0(path, idFiles[i]), 1, outputFoldername, fileoutputurl = returnURL )
 
     }
 }
+
+stopCluster(clusterHPC77)
+
+
 
 harfileexec2("Test24Feb2019/file1_178_13.csv", "Test24Feb2019/file2_178_13.csv","Test24Feb2019/file3_178_13.csv", outputFoldername, fileoutputurl = returnURL)
 harfileexec2("data2/file1Test.csv", "data2/file2Test.csv", "data2/file3Test.csv", outputFoldername, fileoutputurl = returnURL)
@@ -84,12 +87,8 @@ as.numeric(end_p - start_p)
 
 getJobResult(outputFoldername + "- job ")
 
-stopCluster(clusterHPC)
 
 x <- simplexConstraints(20)
-fhitandrun <- function() {
-    return(hitandrun(x, 1E4))
-}
 results100 <- foreach(i = 1:10) %dopar% { x <- 10 }
    library('hitandrun')
     fhitandrun()
@@ -105,7 +104,6 @@ if (length(getClusterList()[, 1]) == 0) {
 }
 registerDoAzureParallel(mcmchpcdocker)
 
-stopCluster(clusterHPC77)
 stopCluster(clusterHPC2)
 
 
